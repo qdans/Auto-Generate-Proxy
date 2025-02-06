@@ -4,7 +4,6 @@ import random
 import logging
 from fake_useragent import UserAgent
 import time
-import os
 import signal
 
 # Setup logging
@@ -20,21 +19,12 @@ BOT_ICON = r"""
 ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═══╝╚══════╝
 """
 
-GITHUB_LINK = "https://github.com/qdans"
-
-# Function to handle Ctrl+C
-def signal_handler(sig, frame):
-    print("\nExiting bot...")
-    exit(0)
-
-signal.signal(signal.SIGINT, signal_handler)
-
 def display_welcome_message():
     print(BOT_ICON)
-    print(f"GitHub: {GITHUB_LINK}\n")
     print("Welcome to the Free Proxy Scraper Bot!")
     print("This bot will help you find high-quality free proxies from multiple sources.")
-    print("It automatically fetches and checks proxies without user input.\n")
+    print("You can find a list of working proxies saved in 'working_proxies.txt'.")
+    print("GitHub: https://github.com/qdans\n")
 
 def get_free_proxies():
     sources = [
@@ -42,14 +32,12 @@ def get_free_proxies():
         "https://www.free-proxy-list.net/",
         "https://www.us-proxy.org/",
         "https://www.socks-proxy.net/",
-        "https://www.proxy-list.download/HTTPS",
-        "https://www.proxy-list.download/HTTP",
-        "https://www.proxy-list.download/SOCKS4",
-        "https://www.proxy-list.download/SOCKS5",
         "https://www.proxyscrape.com/free-proxy-list",
-        "https://raw.githubusercontent.com/TheSpeedX/SOCKS-List/master/http.txt",
-        "https://raw.githubusercontent.com/TheSpeedX/SOCKS-List/master/socks4.txt",
-        "https://raw.githubusercontent.com/TheSpeedX/SOCKS-List/master/socks5.txt"
+        "https://free-proxy-list.net/anonymous-proxy.html",
+        "https://www.proxy-list.download/api/v1/get?type=http",
+        "https://www.proxy-list.download/api/v1/get?type=https",
+        "https://www.proxy-list.download/api/v1/get?type=socks4",
+        "https://www.proxy-list.download/api/v1/get?type=socks5"
     ]
     ua = UserAgent()
     proxies = []
@@ -70,7 +58,6 @@ def get_free_proxies():
                     port = tds[1].text.strip()
                     proxy = f"{ip}:{port}"
                     proxies.append(proxy)
-
         except requests.RequestException as e:
             logging.error(f"Error fetching proxies from {url}: {e}")
 
@@ -96,17 +83,12 @@ def check_proxy(proxy):
                 speed = time.time() - start_time
                 logging.info(f"Proxy {proxy} works with {url} in {speed:.2f} seconds!")
                 return True, speed
-        except requests.RequestException as e:
-            logging.debug(f"Proxy {proxy} failed with {url}: {e}")
+        except requests.RequestException:
             continue
 
     return False, float('inf')
 
 def get_working_proxies():
-    # Clear previous run history
-    if os.path.exists("working_proxies.txt"):
-        os.remove("working_proxies.txt")
-
     proxy_list = get_free_proxies()
 
     if not proxy_list:
@@ -134,8 +116,14 @@ def get_working_proxies():
 
     return working_proxies
 
+def signal_handler(sig, frame):
+    print("\nProcess terminated by user. Exiting...")
+    exit(0)
+
 def main():
     display_welcome_message()
+    signal.signal(signal.SIGINT, signal_handler)  # Handle Ctrl+C
+
     working_proxies = get_working_proxies()
 
     if working_proxies:
