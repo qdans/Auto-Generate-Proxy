@@ -5,6 +5,7 @@ import logging
 from fake_useragent import UserAgent
 import time
 import signal
+import sys
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -19,25 +20,21 @@ BOT_ICON = r"""
 ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═══╝╚══════╝
 """
 
+GITHUB_LINK = "https://github.com/qdans"
+
 def display_welcome_message():
     print(BOT_ICON)
+    print(f"GitHub: {GITHUB_LINK}\n")
     print("Welcome to the Free Proxy Scraper Bot!")
     print("This bot will help you find high-quality free proxies from multiple sources.")
-    print("You can find a list of working proxies saved in 'working_proxies.txt'.")
-    print("GitHub: https://github.com/qdans\n")
+    print("You can specify how many proxies you want to generate, and the bot will prioritize the best ones.\n")
 
 def get_free_proxies():
     sources = [
         "https://www.sslproxies.org/",
         "https://www.free-proxy-list.net/",
         "https://www.us-proxy.org/",
-        "https://www.socks-proxy.net/",
-        "https://www.proxyscrape.com/free-proxy-list",
-        "https://free-proxy-list.net/anonymous-proxy.html",
-        "https://www.proxy-list.download/api/v1/get?type=http",
-        "https://www.proxy-list.download/api/v1/get?type=https",
-        "https://www.proxy-list.download/api/v1/get?type=socks4",
-        "https://www.proxy-list.download/api/v1/get?type=socks5"
+        "https://www.socks-proxy.net/"
     ]
     ua = UserAgent()
     proxies = []
@@ -58,6 +55,7 @@ def get_free_proxies():
                     port = tds[1].text.strip()
                     proxy = f"{ip}:{port}"
                     proxies.append(proxy)
+
         except requests.RequestException as e:
             logging.error(f"Error fetching proxies from {url}: {e}")
 
@@ -83,12 +81,13 @@ def check_proxy(proxy):
                 speed = time.time() - start_time
                 logging.info(f"Proxy {proxy} works with {url} in {speed:.2f} seconds!")
                 return True, speed
-        except requests.RequestException:
+        except requests.RequestException as e:
+            logging.debug(f"Proxy {proxy} failed with {url}: {e}")
             continue
 
     return False, float('inf')
 
-def get_working_proxies():
+def get_working_proxies(max_proxies_to_check):
     proxy_list = get_free_proxies()
 
     if not proxy_list:
@@ -98,7 +97,7 @@ def get_working_proxies():
     random.shuffle(proxy_list)
     working_proxies = []
 
-    for proxy in proxy_list:
+    for proxy in proxy_list[:max_proxies_to_check]:
         is_working, speed = check_proxy(proxy)
         if is_working:
             working_proxies.append((proxy, speed))
@@ -117,14 +116,20 @@ def get_working_proxies():
     return working_proxies
 
 def signal_handler(sig, frame):
-    print("\nProcess terminated by user. Exiting...")
-    exit(0)
+    print("\nCtrl+C detected. Exiting gracefully...")
+    sys.exit(0)
 
 def main():
+    signal.signal(signal.SIGINT, signal_handler)
     display_welcome_message()
-    signal.signal(signal.SIGINT, signal_handler)  # Handle Ctrl+C
 
-    working_proxies = get_working_proxies()
+    try:
+        max_proxies_to_check = int(input("Enter the number of proxies you want to generate (e.g., 50): "))
+    except ValueError:
+        print("Invalid input. Please enter a valid number.")
+        return
+
+    working_proxies = get_working_proxies(max_proxies_to_check)
 
     if working_proxies:
         print("\nTop 10 Fastest Proxies:")
