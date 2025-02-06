@@ -8,15 +8,23 @@ def get_free_proxies():
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
     }
     response = requests.get(url, headers=headers)
-    soup = BeautifulSoup(response.text, 'html.parser')
     
+    if response.status_code != 200:
+        print("Failed to fetch proxy list.")
+        return []
+    
+    soup = BeautifulSoup(response.text, 'html.parser')
     proxies = []
     for row in soup.select("table.table tbody tr"):
         tds = row.find_all("td")
-        ip = tds[0].text.strip()
-        port = tds[1].text.strip()
-        proxy = f"{ip}:{port}"
-        proxies.append(proxy)
+        if len(tds) >= 2:
+            ip = tds[0].text.strip()
+            port = tds[1].text.strip()
+            proxy = f"{ip}:{port}"
+            proxies.append(proxy)
+    
+    if not proxies:
+        print("No proxies found. The website structure may have changed.")
     
     return proxies
 
@@ -34,6 +42,11 @@ def check_proxy(proxy):
 
 def get_working_proxies():
     proxy_list = get_free_proxies()
+    
+    if not proxy_list:
+        print("No proxies retrieved. Exiting...")
+        return []
+    
     random.shuffle(proxy_list)
     working_proxies = []
     
@@ -41,9 +54,10 @@ def get_working_proxies():
         if check_proxy(proxy):
             working_proxies.append(proxy)
     
-    with open("working_proxies.txt", "w") as f:
-        for proxy in working_proxies:
-            f.write(proxy + "\n")
+    if working_proxies:
+        with open("working_proxies.txt", "w") as f:
+            for proxy in working_proxies:
+                f.write(proxy + "\n")
     
     return working_proxies
 
