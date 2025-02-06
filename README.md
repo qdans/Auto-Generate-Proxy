@@ -22,7 +22,7 @@ python -m venv venv
 venv\Scripts\activate
 ```
 
-#### On macOS/Linux:
+#### On Linux/macOS:
 ```sh
 python3 -m venv venv
 source venv/bin/activate
@@ -41,7 +41,8 @@ pip install -r requirements.txt
 
 Run the script using:
 ```sh
-python main.py
+python main.py #atau python3 main.py
 ```
 
 The working proxies will be saved in `working_proxies.txt`.
+To stop bot `Ctrl+C`.
