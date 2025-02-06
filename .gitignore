@@ -1,11 +1,4 @@
+working_proxies.txt
+proxy_scraper.log
 __pycache__/
 *.pyc
-*.pyo
-*.pyd
-venv/
-env/
-*.log
-proxy_scraper.log
-working_proxies.txt
-.vscode/
-.idea/
