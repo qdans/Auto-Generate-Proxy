@@ -8,7 +8,7 @@ This is a Python bot that automatically collects free proxies from the internet,
 
 First, clone this repository to your local machine:
 ```sh
-git clone https://github.com/yourusername/auto-generate-proxy.git
+git clone https://github.com/qdans/Auto-Generate-Proxy.git
 cd auto-generate-proxy
 ```
 
@@ -45,14 +45,3 @@ python main.py
 ```
 
 The working proxies will be saved in `working_proxies.txt`.
-
-## Deactivating the Virtual Environment
-
-When you're done using the script, deactivate the virtual environment:
-```sh
-deactivate
-```
-
-## License
-
-This project is open-source and available under the MIT License.
