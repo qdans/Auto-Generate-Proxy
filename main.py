@@ -4,8 +4,8 @@ import random
 import logging
 from fake_useragent import UserAgent
 import time
+import os
 import signal
-import sys
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -22,19 +22,34 @@ BOT_ICON = r"""
 
 GITHUB_LINK = "https://github.com/qdans"
 
+# Function to handle Ctrl+C
+def signal_handler(sig, frame):
+    print("\nExiting bot...")
+    exit(0)
+
+signal.signal(signal.SIGINT, signal_handler)
+
 def display_welcome_message():
     print(BOT_ICON)
     print(f"GitHub: {GITHUB_LINK}\n")
     print("Welcome to the Free Proxy Scraper Bot!")
     print("This bot will help you find high-quality free proxies from multiple sources.")
-    print("You can specify how many proxies you want to generate, and the bot will prioritize the best ones.\n")
+    print("It automatically fetches and checks proxies without user input.\n")
 
 def get_free_proxies():
     sources = [
         "https://www.sslproxies.org/",
         "https://www.free-proxy-list.net/",
         "https://www.us-proxy.org/",
-        "https://www.socks-proxy.net/"
+        "https://www.socks-proxy.net/",
+        "https://www.proxy-list.download/HTTPS",
+        "https://www.proxy-list.download/HTTP",
+        "https://www.proxy-list.download/SOCKS4",
+        "https://www.proxy-list.download/SOCKS5",
+        "https://www.proxyscrape.com/free-proxy-list",
+        "https://raw.githubusercontent.com/TheSpeedX/SOCKS-List/master/http.txt",
+        "https://raw.githubusercontent.com/TheSpeedX/SOCKS-List/master/socks4.txt",
+        "https://raw.githubusercontent.com/TheSpeedX/SOCKS-List/master/socks5.txt"
     ]
     ua = UserAgent()
     proxies = []
@@ -87,7 +102,11 @@ def check_proxy(proxy):
 
     return False, float('inf')
 
-def get_working_proxies(max_proxies_to_check):
+def get_working_proxies():
+    # Clear previous run history
+    if os.path.exists("working_proxies.txt"):
+        os.remove("working_proxies.txt")
+
     proxy_list = get_free_proxies()
 
     if not proxy_list:
@@ -97,7 +116,7 @@ def get_working_proxies(max_proxies_to_check):
     random.shuffle(proxy_list)
     working_proxies = []
 
-    for proxy in proxy_list[:max_proxies_to_check]:
+    for proxy in proxy_list:
         is_working, speed = check_proxy(proxy)
         if is_working:
             working_proxies.append((proxy, speed))
@@ -115,21 +134,9 @@ def get_working_proxies(max_proxies_to_check):
 
     return working_proxies
 
-def signal_handler(sig, frame):
-    print("\nCtrl+C detected. Exiting gracefully...")
-    sys.exit(0)
-
 def main():
-    signal.signal(signal.SIGINT, signal_handler)
     display_welcome_message()
-
-    try:
-        max_proxies_to_check = int(input("Enter the number of proxies you want to generate (e.g., 50): "))
-    except ValueError:
-        print("Invalid input. Please enter a valid number.")
-        return
-
-    working_proxies = get_working_proxies(max_proxies_to_check)
+    working_proxies = get_working_proxies()
 
     if working_proxies:
         print("\nTop 10 Fastest Proxies:")
