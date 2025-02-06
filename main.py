@@ -4,6 +4,8 @@ import random
 import logging
 from fake_useragent import UserAgent
 import time
+import signal
+import sys
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -113,7 +115,12 @@ def get_working_proxies(max_proxies_to_check):
 
     return working_proxies
 
+def signal_handler(sig, frame):
+    print("\nCtrl+C detected. Exiting gracefully...")
+    sys.exit(0)
+
 def main():
+    signal.signal(signal.SIGINT, signal_handler)
     display_welcome_message()
 
     try:
