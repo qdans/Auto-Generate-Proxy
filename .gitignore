@@ -1,5 +1,3 @@
 __pycache__/
-*.pyc
-*.pyo
 *.log
 working_proxies.txt
