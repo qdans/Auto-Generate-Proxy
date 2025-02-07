@@ -23,7 +23,7 @@ BOT_ASCII_ART = """
 ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═══╝╚══════╝
 """
 
-# Additional Proxy Sources
+# Sumber proxy tambahan
 SOURCES = [
     "https://www.sslproxies.org/",
     "https://www.free-proxy-list.net/",
@@ -68,6 +68,23 @@ def main():
     print(BOT_ASCII_ART)
     print("Welcome to the Free Proxy Scraper Bot!")
     print("Press Ctrl+C to stop the bot at any time.")
+    
+    # Meminta jumlah proxy yang ingin digenerate dari pengguna
+    while True:
+        try:
+            user_input = input("Enter the number of proxies you want to generate (leave blank to run indefinitely): ").strip()
+            if user_input == "":
+                max_proxies = float('inf')  # Loop tanpa henti
+            else:
+                max_proxies = int(user_input)
+            break
+        except ValueError:
+            print("Invalid input. Please enter a valid number.")
+    
+    print(f"Generating up to {max_proxies} proxies...")
+    
+    proxies = get_free_proxies()
+    print(f"Total proxies found: {len(proxies)}")
 
 if __name__ == "__main__":
     main()
