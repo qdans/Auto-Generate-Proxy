@@ -89,7 +89,7 @@ def save_proxy(proxy):
 
 # Fungsi utama
 def main():
-    num_proxies = input(f"{Fore.YELLOW}Enter the number of proxies to generate (leave blank for continuous generation): {Style.RESET_ALL}")
+    num_proxies = input(f"{Fore.YELLOW}Enter the number of proxies to generate (leave blank to generate infinite): {Style.RESET_ALL}")
     if num_proxies:
         num_proxies = int(num_proxies)
         count = 0
