@@ -1,90 +1,111 @@
 import requests
 from bs4 import BeautifulSoup
-import random
-import logging
-from fake_useragent import UserAgent
 import time
 import signal
 import sys
+from concurrent.futures import ThreadPoolExecutor
+from colorama import Fore, Style, init
 
-# Setup logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', handlers=[
-    logging.FileHandler("main.log", encoding='utf-8'),
-    logging.StreamHandler()
-])
+# Inisialisasi colorama untuk warna
+init(autoreset=True)
 
-# ASCII Art
-BOT_ASCII_ART = """
-██████╗  █████╗ ███╗   ██╗███████╗
-██╔══██╗██╔══██╗████╗  ██║██╔════╝
-██║  ██║███████║██╔██╗ ██║███████╗
-██║  ██║██╔══██║██║╚██╗██║╚════██║
-██████╔╝██║  ██║██║ ╚████║███████║
-╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═══╝╚══════╝
+# ASCII Art dan Identitas Bot
+ASCII_ART = f"""
+{Fore.CYAN}██████╗  █████╗ ███╗   ██╗███████╗
+{Fore.CYAN}██╔══██╗██╔══██╗████╗  ██║██╔════╝
+{Fore.CYAN}██║  ██║███████║██╔██╗ ██║███████╗
+{Fore.CYAN}██║  ██║██╔══██║██║╚██╗██║╚════██║
+{Fore.CYAN}██████╔╝██║  ██║██║ ╚████║███████║
+{Fore.CYAN}╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═══╝╚══════╝
+{Fore.YELLOW}Auto Generate Proxy Bot
+{Fore.GREEN}GitHub: https://github.com/qdans
 """
 
+print(ASCII_ART)
+
+# Fungsi untuk menangani sinyal Ctrl+C
+def signal_handler(sig, frame):
+    print(f"\n{Fore.RED}Bot stopped by user.{Style.RESET_ALL}")
+    sys.exit(0)
+
+signal.signal(signal.SIGINT, signal_handler)
+
 # Sumber proxy tambahan
-SOURCES = [
+PROXY_SOURCES = [
     "https://www.sslproxies.org/",
-    "https://www.free-proxy-list.net/",
+    "https://free-proxy-list.net/",
     "https://www.us-proxy.org/",
     "https://www.socks-proxy.net/",
-    "https://proxy-daily.com/",
-    "https://www.proxy-list.download/HTTP",
-    "https://www.proxy-list.download/HTTPS",
-    "https://www.proxy-list.download/SOCKS4",
-    "https://www.proxy-list.download/SOCKS5"
 ]
 
-def get_free_proxies():
-    ua = UserAgent()
-    proxies = set()
-
-    for url in SOURCES:
+# Fungsi untuk mengambil proxy dari sumber online
+def fetch_proxies():
+    proxies = []
+    for url in PROXY_SOURCES:
         try:
-            headers = {"User-Agent": ua.random}
-            response = requests.get(url, headers=headers, timeout=10)
-            if response.status_code != 200:
-                logging.warning(f"Failed to fetch proxy list from {url}")
-                continue
-
+            response = requests.get(url)
             soup = BeautifulSoup(response.text, 'html.parser')
-            for row in soup.select("table.table tbody tr"):
-                tds = row.find_all("td")
-                if len(tds) >= 2:
-                    ip = tds[0].text.strip()
-                    port = tds[1].text.strip()
-                    proxy = f"{ip}:{port}"
-                    proxies.add(proxy)
+            for row in soup.find_all('tr'):
+                cols = row.find_all('td')
+                if len(cols) > 0:
+                    ip = cols[0].text
+                    port = cols[1].text
+                    proxies.append(f"{ip}:{port}")
+        except Exception as e:
+            print(f"{Fore.RED}Failed to fetch proxies from {url}: {e}{Style.RESET_ALL}")
+    return proxies
 
-        except requests.RequestException as e:
-            logging.error(f"Error fetching proxies from {url}: {e}")
+# Fungsi untuk memeriksa kualitas proxy (latency dan konektivitas)
+def check_proxy_quality(proxy):
+    try:
+        start_time = time.time()
+        response = requests.get(
+            "http://example.com",
+            proxies={"http": proxy, "https": proxy},
+            timeout=5
+        )
+        latency = time.time() - start_time
+        if response.status_code == 200 and latency < 2.0:  # Latency maksimal 2 detik
+            return True, latency
+    except:
+        pass
+    return False, None
 
-    if not proxies:
-        logging.warning("No proxies found from any source.")
-    return list(proxies)
+# Fungsi untuk menyimpan proxy ke file
+def save_proxy(proxy):
+    with open("proxies.txt", "a") as file:
+        file.write(proxy + "\n")
 
+# Fungsi utama
 def main():
-    print(BOT_ASCII_ART)
-    print("Welcome to the Free Proxy Scraper Bot!")
-    print("Press Ctrl+C to stop the bot at any time.")
-    
-    # Meminta jumlah proxy yang ingin digenerate dari pengguna
-    while True:
-        try:
-            user_input = input("Enter the number of proxies you want to generate (leave blank to run indefinitely): ").strip()
-            if user_input == "":
-                max_proxies = float('inf')  # Loop tanpa henti
-            else:
-                max_proxies = int(user_input)
-            break
-        except ValueError:
-            print("Invalid input. Please enter a valid number.")
-    
-    print(f"Generating up to {max_proxies} proxies...")
-    
-    proxies = get_free_proxies()
-    print(f"Total proxies found: {len(proxies)}")
+    num_proxies = input(f"{Fore.YELLOW}Enter the number of proxies to generate (leave blank for continuous generation): {Style.RESET_ALL}")
+    if num_proxies:
+        num_proxies = int(num_proxies)
+        count = 0
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            while count < num_proxies:
+                proxies = fetch_proxies()
+                results = list(executor.map(check_proxy_quality, proxies))
+                for proxy, (is_valid, latency) in zip(proxies, results):
+                    if is_valid:
+                        save_proxy(proxy)
+                        count += 1
+                        print(f"{Fore.GREEN}Proxy {count} saved: {proxy} (Latency: {latency:.2f}s){Style.RESET_ALL}")
+                        if count >= num_proxies:
+                            break
+                time.sleep(10)  # Tunggu 10 detik sebelum mengambil proxy lagi
+    else:
+        count = 0
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            while True:
+                proxies = fetch_proxies()
+                results = list(executor.map(check_proxy_quality, proxies))
+                for proxy, (is_valid, latency) in zip(proxies, results):
+                    if is_valid:
+                        save_proxy(proxy)
+                        count += 1
+                        print(f"{Fore.GREEN}Proxy {count} saved: {proxy} (Latency: {latency:.2f}s){Style.RESET_ALL}")
+                time.sleep(10)  # Tunggu 10 detik sebelum mengambil proxy lagi
 
 if __name__ == "__main__":
     main()
