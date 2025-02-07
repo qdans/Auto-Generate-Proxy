@@ -41,7 +41,7 @@ pip install -r requirements.txt
 
 Run the script using:
 ```sh
-python main.py #atau python3 main.py
+python main.py #or python3 main.py
 ```
 
 The working proxies will be saved in `working_proxies.txt`.
