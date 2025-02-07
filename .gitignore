@@ -1,4 +1,3 @@
-working_proxies.txt
-proxy_scraper.log
 __pycache__/
-*.pyc
+*.log
+working_proxies.txt
